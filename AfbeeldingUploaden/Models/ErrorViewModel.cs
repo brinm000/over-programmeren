@@ -1,6 +1,6 @@
 using System;
 
-namespace AfbeelifingUploaden.Models
+namespace AfbeeldingUploaden.Models
 {
     public class ErrorViewModel
     {

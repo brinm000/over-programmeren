@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using AfbeelifingUploaden.Models;
 
-namespace AfbeelifingUploaden.Controllers
+namespace AfbeeldingUploaden.Controllers
 {
     public class HomeController : Controller
     {
