@@ -8,7 +8,7 @@ namespace AfbeeldingUploaden.Data
         /// <summary>
         /// De constructor van de database context
         /// </summary>
-        /// <param name="options">De optie parameters voor deze dbcontext,
+        /// <param name="options">De optie-parameters voor deze dbcontext,
         /// bijvoorbeeld de connectionstring</param>
         public AfbeeldingUploadenDbContext(DbContextOptions<AfbeeldingUploadenDbContext> options)
             : base(options)
