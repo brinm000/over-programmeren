@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -7,16 +8,20 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using AfbeeldingUploaden.Data;
 using AfbeeldingUploaden.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 
 namespace AfbeeldingUploaden.Controllers
 {
     public class ProductenController : Controller
     {
         private readonly AfbeeldingUploadenDbContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public ProductenController(AfbeeldingUploadenDbContext context)
+        public ProductenController(AfbeeldingUploadenDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         // GET: Producten
@@ -54,10 +59,16 @@ namespace AfbeeldingUploaden.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Naam,Omschrijving,Afbeelding")] Product product)
+        public async Task<IActionResult> Create(Product product, IFormFile afbeeldingBestand)
         {
+
             if (ModelState.IsValid)
             {
+                if (afbeeldingBestand != null && afbeeldingBestand.Length > 0)
+                {
+                    product.Afbeelding = await SaveImage(afbeeldingBestand);
+                }
+
                 _context.Add(product);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -149,5 +160,43 @@ namespace AfbeeldingUploaden.Controllers
         {
             return _context.Products.Any(e => e.Id == id);
         }
+
+        #region Helpers
+
+        private async Task<string> SaveImage(IFormFile afbeeldingBestand)
+        {
+            // vervang spaties met streepjes voor een mooiere url
+            string bestandsNaam = Path.GetFileName(afbeeldingBestand.FileName)
+                .Replace(' ', '-');
+            int nummer = 0;
+
+            string naamZonderEtensie = Path.GetFileNameWithoutExtension(bestandsNaam);
+            string extensie = Path.GetExtension(bestandsNaam);
+
+            string opgeslagenNaam = bestandsNaam;
+            string afbeeldingPad;
+            do
+            {
+                if (nummer > 0)
+                {
+                    opgeslagenNaam = $"{naamZonderEtensie}({nummer}){extensie}";
+                }
+                string imgPad = $"{_environment.WebRootPath}/img";
+                afbeeldingPad = System.IO.Path.Combine(imgPad, opgeslagenNaam);
+                nummer++;
+            } while (System.IO.File.Exists(afbeeldingPad));
+            try
+            {
+                using var stream = new FileStream(afbeeldingPad, FileMode.Create);
+                await afbeeldingBestand.CopyToAsync(stream);
+                return opgeslagenNaam;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        #endregion
     }
 }
