@@ -94,7 +94,7 @@ namespace AfbeeldingUploaden.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Naam,Omschrijving,Afbeelding")] Product product)
+        public async Task<IActionResult> Edit(int id, Product product, IFormFile afbeeldingBestand)
         {
             if (id != product.Id)
             {
@@ -103,6 +103,10 @@ namespace AfbeeldingUploaden.Controllers
 
             if (ModelState.IsValid)
             {
+                if (afbeeldingBestand != null && afbeeldingBestand.Length > 0)
+                {
+                    product.Afbeelding = await SaveImage(afbeeldingBestand);
+                }
                 try
                 {
                     _context.Update(product);
@@ -148,6 +152,9 @@ namespace AfbeeldingUploaden.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var product = await _context.Products.FindAsync(id);
+            // je kan nog iets doen met het resultaat van DeleteImage (true, false)
+            _ = DeleteImage(product.Afbeelding);
+
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
@@ -192,6 +199,21 @@ namespace AfbeeldingUploaden.Controllers
             {
                 return string.Empty;
             }
+        }
+
+        private bool DeleteImage(string afbeeldingNaam)
+        {
+            string imgPad = $"{_environment.WebRootPath}/img";
+            string afbeeldingPad = System.IO.Path.Combine(imgPad, afbeeldingNaam);
+            try
+            {
+                System.IO.File.Delete(afbeeldingPad);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
         }
 
         #endregion
