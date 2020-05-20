@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -185,35 +187,88 @@ namespace AfbeeldingUploaden.Controllers
                 {
                     opgeslagenNaam = $"{naamZonderEtensie}({nummer}){extensie}";
                 }
-                string imgPad = $"{_environment.WebRootPath}/img";
-                afbeeldingPad = System.IO.Path.Combine(imgPad, opgeslagenNaam);
+                afbeeldingPad = ImagePath(opgeslagenNaam);
                 nummer++;
             } while (System.IO.File.Exists(afbeeldingPad));
             try
             {
                 using var stream = new FileStream(afbeeldingPad, FileMode.Create);
                 await afbeeldingBestand.CopyToAsync(stream);
-                return opgeslagenNaam;
             }
             catch
             {
                 return string.Empty;
             }
+            bool thumbnailOpgeslagen = Thumbnail(opgeslagenNaam);
+
+            // Als geen thumbnail kan worden gemaakt, 
+            // Is er waarschijnlijk iets mis met het bestand.
+            // We wissen het bestand en geven een lege string terug.
+            if (! thumbnailOpgeslagen)
+            {
+                DeleteImage(opgeslagenNaam);
+                return string.Empty;
+            }
+            return opgeslagenNaam;
         }
 
-        private bool DeleteImage(string afbeeldingNaam)
+        public bool ThumbnailCallback()
         {
-            string imgPad = $"{_environment.WebRootPath}/img";
-            string afbeeldingPad = System.IO.Path.Combine(imgPad, afbeeldingNaam);
+            return false;
+        }
+
+        private bool Thumbnail(string afbeeldingNaam)
+        {
+            // Het is niet handig om deze waarde in de code te bepalen. 
+            // Je kan het beter definieren in een settings bestand
+            int thumbnailWidth = 160;
+
+            string afbeeldingPad = ImagePath(afbeeldingNaam);
             try
             {
-                System.IO.File.Delete(afbeeldingPad);
+                Bitmap origineel = new Bitmap(afbeeldingPad);
+                Image.GetThumbnailImageAbort myCallBack = new Image.GetThumbnailImageAbort(ThumbnailCallback);
+
+                float verkleiningsFactor = (float)thumbnailWidth / (float)origineel.Width;
+                int thumbnailHeight = (int)(verkleiningsFactor * origineel.Height);
+
+                Image thumbnail = origineel
+                    .GetThumbnailImage(thumbnailWidth, thumbnailHeight, myCallBack, IntPtr.Zero);
+
+                string thumbnailNaam = $"thumb.{afbeeldingNaam}";
+                string thumbnailPad = ImagePath(thumbnailNaam);
+
+                thumbnail.Save(thumbnailPad);
             }
             catch
             {
                 return false;
             }
             return true;
+        }
+
+        private bool DeleteImage(string afbeeldingNaam)
+        {
+            try
+            {
+                string afbeeldingPad = ImagePath(afbeeldingNaam);
+                System.IO.File.Delete(afbeeldingPad);
+
+                string thumbnailPad = ImagePath($"thumb.{afbeeldingNaam}");
+                System.IO.File.Delete(thumbnailPad);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public string ImagePath(string imageFileName)
+        {
+            string imgPad = $"{_environment.WebRootPath}/img";
+            string imagePath = Path.Combine(imgPad, imageFileName);
+            return imagePath;
         }
 
         #endregion
