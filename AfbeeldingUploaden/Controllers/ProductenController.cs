@@ -94,7 +94,7 @@ namespace AfbeeldingUploaden.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Naam,Omschrijving,Afbeelding")] Product product)
+        public async Task<IActionResult> Edit(int id, Product product, IFormFile afbeeldingBestand)
         {
             if (id != product.Id)
             {
@@ -103,6 +103,10 @@ namespace AfbeeldingUploaden.Controllers
 
             if (ModelState.IsValid)
             {
+                if (afbeeldingBestand != null && afbeeldingBestand.Length > 0)
+                {
+                    product.Afbeelding = await SaveImage(afbeeldingBestand);
+                }
                 try
                 {
                     _context.Update(product);
