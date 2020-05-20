@@ -152,6 +152,9 @@ namespace AfbeeldingUploaden.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var product = await _context.Products.FindAsync(id);
+            // je kan nog iets doen met het resultaat van DeleteImage (true, false)
+            _ = DeleteImage(product.Afbeelding);
+
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
@@ -196,6 +199,21 @@ namespace AfbeeldingUploaden.Controllers
             {
                 return string.Empty;
             }
+        }
+
+        private bool DeleteImage(string afbeeldingNaam)
+        {
+            string imgPad = $"{_environment.WebRootPath}/img";
+            string afbeeldingPad = System.IO.Path.Combine(imgPad, afbeeldingNaam);
+            try
+            {
+                System.IO.File.Delete(afbeeldingPad);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
         }
 
         #endregion
