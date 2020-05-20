@@ -350,4 +350,4 @@ MigrationBackup/
 .ionide/
 
 #Image files uploaded in test
-wwwroot/img/
+wwwroot/img/*
